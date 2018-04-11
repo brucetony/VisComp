@@ -6,7 +6,7 @@ bc_data = pd.read_excel('breast-cancer-wisconsin.xlsx')
 print("Number of instances:", bc_data.shape[0],  "\nNumber of columns:", bc_data.shape[1],  "\nList of column names:", bc_data.columns.values)
 
 # PART B
-# TODO actually do this problem
+# TODO use pandas interpolae to solve this problem
 
 # PART C
 benign = bc_data[bc_data['class'] == 2].drop('class', axis = 1) #Drop class after sorting by it (gives no useful info)
