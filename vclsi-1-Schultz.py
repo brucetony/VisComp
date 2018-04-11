@@ -61,7 +61,7 @@ print(top_5)
 # for this particular attribute is uniform within each group
 
 # PART E
-# Take columns from the top 5 list and write reduced dataset to disk
+# Take columns from the top 5 list and write reduced data set to disk
 reduced = bc_data[list(top_5['Attribute'])]
 reduced.to_csv('reduced_data.csv') #Writes the index still to file
 
