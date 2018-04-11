@@ -1,5 +1,3 @@
-#test
-
 import pandas as pd
 import numpy as np
 
@@ -53,7 +51,7 @@ matched = pd.DataFrame(
 )
 
 #Sort scores
-sorted = matched.sort_values(by='F score', ascending = False)
+sorted = matched.sort_values(by='F score', ascending = False) #Sort scores/attr with largest at top
 
 #Print top 5 attr with highest F scores (largest differences)
 top_5 = sorted[0:5]
@@ -63,9 +61,9 @@ print(top_5)
 # for this particular attribute is uniform within each group
 
 # PART E
-# Take columns from the top 5 list
+# Take columns from the top 5 list and write reduced data set to disk
 reduced = bc_data[list(top_5['Attribute'])]
-reduced.to_csv('reduced_data.csv')
+reduced.to_csv('reduced_data.csv') #Writes the index still to file
 
 #TODO check if it still works after part b
 
