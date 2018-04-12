@@ -6,7 +6,26 @@ bc_data = pd.read_excel('breast-cancer-wisconsin.xlsx')
 print("Number of instances:", bc_data.shape[0],  "\nNumber of columns:", bc_data.shape[1],  "\nList of column names:", bc_data.columns.values)
 
 # PART B
-# TODO use pandas interpolae to solve this problem
+# Create function to tell us which vectors have null values
+def find_missing_values(pds_array):
+    '''
+    :param A pandas dataframe:
+    :return: A list containing the column names which have null values
+    '''
+    null_vectors = []
+    for i in pds_array.columns.values:
+        if pds_array[i].isnull().values.any():
+            null_vectors.append(i) #Add to list of vectors with missing values
+            print("{} contains null values".format(i))
+    if not null_vectors:
+        print("No null values were found")
+    return null_vectors
+
+null_columns = find_missing_values(bc_data) #Use above function to find columns with missing values
+for vec in null_columns:
+    bc_data[vec] = bc_data[vec].interpolate()
+find_missing_values(bc_data) #Check again to be sure
+
 
 # PART C
 benign = bc_data[bc_data['class'] == 2].drop('class', axis = 1) #Drop class after sorting by it (gives no useful info)
@@ -42,8 +61,8 @@ def F_score(attribute, group1, group2):
 
     return F
 
-
-scores = [F_score(attr, benign, malig) for attr in bc_data_no_class.columns.values] #Generate score for each attribute
+#Generate score for each attribute
+scores = [F_score(attr, benign, malig) for attr in bc_data_no_class.columns.values]
 
 #Now match attr with F score
 matched = pd.DataFrame(
@@ -64,8 +83,6 @@ print(top_5)
 # Take columns from the top 5 list and write reduced dataset to disk
 reduced = bc_data[list(top_5['Attribute'])]
 reduced.to_csv('reduced_data.csv') #Writes the index still to file
-
-#TODO check if it still works after part b
 
 #TODO test datasets with online F score tool to verify function is working properly
 
