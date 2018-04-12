@@ -26,6 +26,7 @@ for vec in null_columns:
     bc_data[vec] = bc_data[vec].interpolate()
 find_missing_values(bc_data) #Check again to be sure
 
+# TODO Explain why we use this method
 
 # PART C
 benign = bc_data[bc_data['class'] == 2].drop('class', axis = 1) #Drop class after sorting by it (gives no useful info)
