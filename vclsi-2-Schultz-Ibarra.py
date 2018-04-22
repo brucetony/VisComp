@@ -2,7 +2,6 @@
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
 
 bc_data_full = pd.read_excel('breast-cancer-wisconsin.xlsx')
 
@@ -65,5 +64,5 @@ def scat_matrix():
                 j += 1
     fig.show()
 
-scat_matrix()#
+scat_matrix()
 #print((bc_data_full[bc_data_full['class'] == 2]['normNuc']))
