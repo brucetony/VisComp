@@ -11,19 +11,20 @@ bc_data_full = pd.read_excel('breast-cancer-wisconsin.xlsx')
 
 def scat_matrix(pandasFile, columns, groupColumnName):
     # Generate figure for plots to be plotted in
-    size = len(bc_data.columns.values)
+    size = len(columns)
     fig, axes = plt.subplots(size, size)
 
     i = 0
     j = 0
-    for axis1 in bc_data.columns.values:
-        for axis2 in bc_data.columns.values:
+    for axis1 in columns:
+        for axis2 in columns:
             if axis1 == axis2: #Make diagonal plots different
-                select_data = bc_data_full[[axis1, 'class']]
+                select_data = pandasFile[[axis1, groupColumnName]]
                 # TODO  Determine how to drop NaN properly
                 #select_data = select_data.dropna(axis=1, how='any')
-                benign_sd = select_data[select_data['class'] == 2].drop('class', axis=1)
-                malig_sd = select_data[select_data['class'] == 4].drop('class', axis=1)
+                groups = list(set(pandasFile[groupColumnName])) #Reduce and convert back for indexing
+                benign_sd = select_data[select_data[groupColumnName] == groups[0]].drop(groupColumnName, axis=1)
+                malig_sd = select_data[select_data[groupColumnName] == groups[1]].drop(groupColumnName, axis=1)
                 # Group data in list
                 all_sd = [list(benign_sd[axis1]), list(malig_sd[axis1])]
                 #Generate histogram
@@ -40,7 +41,7 @@ def scat_matrix(pandasFile, columns, groupColumnName):
                 #TODO flip so diagonal goes the other way?
 
             else:
-                axes[i, j].scatter(bc_data[axis1], bc_data[axis2], s=2)
+                axes[i, j].scatter(pandasFile[axis1], pandasFile[axis2], s=2)
 
             # Create counting tool to assemble subplots correctly
             if i < size-1:
@@ -52,4 +53,5 @@ def scat_matrix(pandasFile, columns, groupColumnName):
 
     plt.show()
 
-print((list(bc_data_full['class'])))
+#print((list(bc_data_full['class'] == 2)))
+scat_matrix(bc_data_full, bc_data_full.columns.values, 'class')
