@@ -4,54 +4,66 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-#Using pandas just to import data
-bc_data = pd.read_csv('reduced_data.csv')
-bc_data = bc_data.drop(['bareNuc'], axis=1) #Temporary because of NaN, have to deal with those
 bc_data_full = pd.read_excel('breast-cancer-wisconsin.xlsx')
 
-def scat_matrix(pandasFile, columns, groupColumnName):
+def color_list(variableList):
+    color_list = []
+    for row in variableList:
+        if row == 2:
+            color_list.append('blue')
+        else:
+            color_list.append('red')
+    return color_list
+
+def scat_matrix():
+    #TODO make more general, input parameters = data + list of columns + group separator?
+    # Using pandas just to import data
+    columns = list(pd.read_csv('reduced_data.csv').columns.values)
+    columns.remove('bareNuc')  # Temporary because of NaN, have to deal with those
+    bc_data = pd.read_excel('breast-cancer-wisconsin.xlsx')
+
     # Generate figure for plots to be plotted in
     size = len(columns)
     fig, axes = plt.subplots(size, size)
 
+    #Create colors list
+    colors = color_list(list(bc_data['class']))
+
+    #Used for tracking plot placement
     i = 0
     j = 0
+
+    #Iterate through column names and generate plots
     for axis1 in columns:
         for axis2 in columns:
             if axis1 == axis2: #Make diagonal plots different
-                select_data = pandasFile[[axis1, groupColumnName]]
-                # TODO  Determine how to drop NaN properly
-                #select_data = select_data.dropna(axis=1, how='any')
-                groups = list(set(pandasFile[groupColumnName])) #Reduce and convert back for indexing
-                benign_sd = select_data[select_data[groupColumnName] == groups[0]].drop(groupColumnName, axis=1)
-                malig_sd = select_data[select_data[groupColumnName] == groups[1]].drop(groupColumnName, axis=1)
-                # Group data in list
-                all_sd = [list(benign_sd[axis1]), list(malig_sd[axis1])]
-                #Generate histogram
-                axes[i, j].hist(all_sd[0], color = 'blue', label = 'benign', histtype='bar', density=True)
-                axes[i, j].hist(all_sd[1], color='red', label='malig', histtype='bar', density=True)
+                # TODO  Determine how to drop NaN properly and put missing column back in
+                benign_sd = list(bc_data[bc_data['class'] == 2][axis1])
+                malig_sd = list(bc_data[bc_data['class'] == 4][axis1])
+
+                #Generate histogram, density parameter means normalized
+                axes[i, j].hist(benign_sd, color = 'blue', label = 'benign', histtype='bar', density=True)
+                axes[i, j].hist(malig_sd, color='red', label='malig', histtype='bar', density=True)
                 axes[i, j].set_title(axis1) #Can you optional 'y=###' parameter to move title
                 #TODO set axex ranges
                 #axes[i, j].xlabel(axis1)
                 #axes[i, j].ylabel('Frequency')
-                #plt.legend(loc='upper right')
-                #TODO a third thing is being plotted as well
-                #TODO remove column names from legend
+                #TODO a third thing is being plotted as well --> FIND AND REMOVE
+                #TODO remove column names from legend (legend temp disabled
                 #TODO put border around bar
                 #TODO flip so diagonal goes the other way?
-
+                #TODO verify why some graphs look like >1 when normalized
             else:
-                axes[i, j].scatter(pandasFile[axis1], pandasFile[axis2], s=2)
+                #Set low alpha so overlapping points look darker, alter size of dot instead?
+                axes[i, j].scatter(bc_data[axis1], bc_data[axis2], alpha = 0.1, c=colors, s=2)
 
-            # Create counting tool to assemble subplots correctly
+            # Increase counter
             if i < size-1:
                 i += 1
             else:
                 i = 0
                 j += 1
+    fig.show()
 
-
-    plt.show()
-
-#print((list(bc_data_full['class'] == 2)))
-scat_matrix(bc_data_full, bc_data_full.columns.values, 'class')
+scat_matrix()#
+#print((bc_data_full[bc_data_full['class'] == 2]['normNuc']))
