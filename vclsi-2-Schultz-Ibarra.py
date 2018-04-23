@@ -18,6 +18,8 @@ def scat_matrix():
     #TODO make more general, input parameters = data + list of columns + group separator?
     # Using pandas just to import data
     columns = list(pd.read_csv('reduced_data.csv').columns.values)
+    if columns[0] == 'Unnamed: 0': #In case using old data set
+        columns = columns[1:]
     columns.remove('bareNuc')  # Temporary because of NaN, have to deal with those
     bc_data = pd.read_excel('breast-cancer-wisconsin.xlsx')
 
@@ -66,3 +68,4 @@ def scat_matrix():
 
 scat_matrix()
 #print((bc_data_full[bc_data_full['class'] == 2]['normNuc']))
+#print((bc_data_full.loc[bc_data_full['class'] == 2, 'normNuc']))
