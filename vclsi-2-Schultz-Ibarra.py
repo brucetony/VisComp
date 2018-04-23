@@ -14,6 +14,10 @@ def color_list(variableList):
             color_list.append('red')
     return color_list
 
+def DC():
+
+    pass
+
 def scat_matrix():
     #TODO make more general, input parameters = data + list of columns + group separator?
     # Using pandas just to import data
@@ -25,7 +29,7 @@ def scat_matrix():
 
     # Generate figure for plots to be plotted in
     size = len(columns)
-    fig, axes = plt.subplots(size, size)
+    fig, subs = plt.subplots(size, size)
 
     #Create colors list
     colors = color_list(list(bc_data['class']))
@@ -38,25 +42,24 @@ def scat_matrix():
     for axis1 in columns:
         for axis2 in columns:
             if axis1 == axis2: #Make diagonal plots different
-                # TODO  Determine how to drop NaN properly and put missing column back in
+                #TODO  Determine how to drop NaN properly and put missing column back in
                 benign_sd = list(bc_data[bc_data['class'] == 2][axis1])
                 malig_sd = list(bc_data[bc_data['class'] == 4][axis1])
 
                 #Generate histogram, density parameter means normalized
-                axes[i, j].hist(benign_sd, color = 'blue', label = 'benign', histtype='bar', density=True)
-                axes[i, j].hist(malig_sd, color='red', label='malig', histtype='bar', density=True)
-                axes[i, j].set_title(axis1) #Can you optional 'y=###' parameter to move title
+                subs[i, j].hist(benign_sd, color = 'blue', label = 'benign', histtype='bar', density=True)
+                subs[i, j].hist(malig_sd, color='red', label='malig', histtype='bar', density=True)
+                subs[i, j].set_title(axis1) #Can you optional 'y=###' parameter to move title
                 #TODO set axex ranges
                 #axes[i, j].xlabel(axis1)
                 #axes[i, j].ylabel('Frequency')
                 #TODO a third thing is being plotted as well --> FIND AND REMOVE
-                #TODO remove column names from legend (legend temp disabled
                 #TODO put border around bar
                 #TODO flip so diagonal goes the other way?
                 #TODO verify why some graphs look like >1 when normalized
             else:
                 #Set low alpha so overlapping points look darker, alter size of dot instead?
-                axes[i, j].scatter(bc_data[axis1], bc_data[axis2], alpha = 0.1, c=colors, s=2)
+                subs[i, j].scatter(bc_data[axis1], bc_data[axis2], alpha=0.1, c=colors, s=2)
 
             # Increase counter
             if i < size-1:
@@ -64,8 +67,11 @@ def scat_matrix():
             else:
                 i = 0
                 j += 1
+
+    # Figure attributes
+    subs[0, 0].legend(bbox_to_anchor=(-0.2, 1.0))
+    fig.suptitle('Malignant and Benign Tumor Values', x=0.5, y=1.0)
     fig.show()
 
-scat_matrix()
+#scat_matrix()
 #print((bc_data_full[bc_data_full['class'] == 2]['normNuc']))
-#print((bc_data_full.loc[bc_data_full['class'] == 2, 'normNuc']))
