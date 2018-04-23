@@ -34,6 +34,7 @@ def DSC(point_list):
     :param point_list: A list of points in tuple format
     :return: Numerical computation of the Distance consistency for all points provided
     '''
+    #TODO check if this is right
     # First computer center points
     centers = cluster_center(point_list)
     #Create empty lists to store distances of the difference between each point and each centroid
@@ -47,6 +48,7 @@ def DSC(point_list):
                     same_cluster_distances.append(np.linalg.norm(np.array(datapoint) - centers[i]))
                 else:
                     diff_cluster_distances.append(np.linalg.norm(np.array(datapoint) - centers[j]))
+    # Create counter to keep track points closer to their own centroid
     closer_points = 0
     for k in range(len(same_cluster_distances)):
         if same_cluster_distances[k] < diff_cluster_distances[k]:
@@ -78,7 +80,7 @@ def scat_matrix():
     for axis1 in columns:
         for axis2 in columns:
             if axis1 == axis2: #Make diagonal plots different
-                #TODO  Determine how to drop NaN properly and put missing column back in
+                #TODO Interpolate missing values
                 benign_sd = list(bc_data[bc_data['class'] == 2][axis1])
                 malig_sd = list(bc_data[bc_data['class'] == 4][axis1])
 
@@ -116,4 +118,3 @@ def scat_matrix():
     fig.show()
 
 scat_matrix()
-c = [[(1, 1), (1, 2), (0, 0)], [(4, 9), (8, 8), (0, 0)]]
