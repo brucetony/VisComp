@@ -2,6 +2,7 @@
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 
 bc_data_full = pd.read_excel('breast-cancer-wisconsin.xlsx')
 
@@ -14,9 +15,44 @@ def color_list(variableList):
             color_list.append('red')
     return color_list
 
-def DC():
+def cluster_center(points):
+    '''
+    Computes the center point from a list of points
+    :param points: Can be a list of lists of tuples containing points
+    :return: A list with center point for each set of points provided, in numpy array format
+    '''
+    cluster_centers = [np.array([0, 0]) for dataset in points]
+    for i in range(len(points)):
+        for datapoint in points[i]:
+            cluster_centers[i] = np.add(np.array(datapoint), cluster_centers[i])
+        cluster_centers[i] = cluster_centers[i]/len(points[i])
+    return cluster_centers
 
-    pass
+def DSC(point_list):
+    '''
+    Computers Distance consistency for a set (or sets) of points
+    :param point_list: A list of points in tuple format
+    :return: Numerical computation of the Distance consistency for all points provided
+    '''
+    # First computer center points
+    centers = cluster_center(point_list)
+    #Create empty lists to store distances of the difference between each point and each centroid
+    same_cluster_distances = []
+    diff_cluster_distances = []
+    for i in range(len(point_list)):
+        for datapoint in point_list[i]:
+            for j in range(len(point_list)):
+                # Alternate between same centroid and diff centroids, store in list
+                if i == j:
+                    same_cluster_distances.append(np.linalg.norm(np.array(datapoint) - centers[i]))
+                else:
+                    diff_cluster_distances.append(np.linalg.norm(np.array(datapoint) - centers[j]))
+    closer_points = 0
+    for k in range(len(same_cluster_distances)):
+        if same_cluster_distances[k] < diff_cluster_distances[k]:
+            closer_points += 1
+    return (100*closer_points/len(same_cluster_distances))
+
 
 def scat_matrix():
     #TODO make more general, input parameters = data + list of columns + group separator?
@@ -60,6 +96,12 @@ def scat_matrix():
             else:
                 #Set low alpha so overlapping points look darker, alter size of dot instead?
                 subs[i, j].scatter(bc_data[axis1], bc_data[axis2], alpha=0.1, c=colors, s=2)
+                benign_a1 = list(bc_data[bc_data['class'] == 2][axis1])
+                malig_a1 = list(bc_data[bc_data['class'] == 4][axis1])
+                benign_a2 = list(bc_data[bc_data['class'] == 2][axis2])
+                malig_a2 = list(bc_data[bc_data['class'] == 4][axis2])
+                all_points = [list(zip(benign_a1, benign_a2)), list(zip(malig_a1, malig_a2))]
+                print('DSC of {} and {} = {}'.format(axis1, axis2, DSC(all_points)))
 
             # Increase counter
             if i < size-1:
@@ -73,5 +115,5 @@ def scat_matrix():
     fig.suptitle('Malignant and Benign Tumor Values', x=0.5, y=1.0)
     fig.show()
 
-#scat_matrix()
-#print((bc_data_full[bc_data_full['class'] == 2]['normNuc']))
+scat_matrix()
+c = [[(1, 1), (1, 2), (0, 0)], [(4, 9), (8, 8), (0, 0)]]
