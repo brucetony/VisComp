@@ -105,7 +105,7 @@ def scat_matrix():
     #Interpolate missing data
     bc_data = interpolate_values(bc_data)
 
-    # Generate figure for plots to be plotted in
+    #Generate figure for plots to be plotted in
     size = len(columns)
     fig, subs = plt.subplots(size, size, figsize=(15, 15))
 
@@ -156,6 +156,7 @@ def scat_matrix():
     # Figure attributes
     subs[0, 0].legend(bbox_to_anchor=(-0.2, 1.0))
     fig.suptitle('Malignant and Benign Tumor Values', x=0.5, y=1.0)
+    fig.savefig('Scatter Plot.png')
     fig.show()
 
 scat_matrix()
