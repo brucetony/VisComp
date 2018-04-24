@@ -55,6 +55,44 @@ def DSC(point_list):
             closer_points += 1
     return (100*closer_points/len(same_cluster_distances))
 
+def find_missing_values(pds_array):
+    '''
+    :param A pandas dataframe:
+    :return: A list containing the column names which have null values
+    '''
+    null_vectors = []
+    for i in pds_array.columns.values:
+        if pds_array[i].isnull().values.any():
+            null_vectors.append(i) #Add to list of vectors with missing values
+            print("{} contains null values".format(i))
+    if not null_vectors:
+        print("No null values were found")
+    return null_vectors
+
+def interpolate_values(pandasDF):
+    '''
+    Interpolate null values using average for vector by class
+    :param pandasDF: Full pandas dataframe
+    :return: Concatenated pandas dataframe with null values replaced
+    '''
+    null_vectors = find_missing_values(pandasDF)
+    for vector in null_vectors:
+        #Slice empty vectors
+        benign = pandasDF[pandasDF['class'] == 2]
+        malig = pandasDF[pandasDF['class'] == 4]
+
+        #Drop na and find average for each class, rounded to nearest integer
+        benign_av = int(round(np.mean(benign[vector].dropna())))
+        malig_av = int(round(np.mean(malig[vector].dropna())))
+
+        #Fill null with average values
+        benign = benign.fillna(benign_av)
+        malig = malig.fillna(malig_av)
+
+        #Concatenate pandas frames
+        pandasDF_no_null = pd.concat([benign, malig])
+    return pandasDF_no_null
+
 
 def scat_matrix():
     #TODO make more general, input parameters = data + list of columns + group separator?
@@ -62,12 +100,14 @@ def scat_matrix():
     columns = list(pd.read_csv('reduced_data.csv').columns.values)
     if columns[0] == 'Unnamed: 0': #In case using old data set
         columns = columns[1:]
-    columns.remove('bareNuc')  # Temporary because of NaN, have to deal with those
     bc_data = pd.read_excel('breast-cancer-wisconsin.xlsx')
+
+    #Interpolate missing data
+    bc_data = interpolate_values(bc_data)
 
     # Generate figure for plots to be plotted in
     size = len(columns)
-    fig, subs = plt.subplots(size, size)
+    fig, subs = plt.subplots(size, size, figsize=(15, 15))
 
     #Create colors list
     colors = color_list(list(bc_data['class']))
@@ -79,8 +119,8 @@ def scat_matrix():
     #Iterate through column names and generate plots
     for axis1 in columns:
         for axis2 in columns:
-            if axis1 == axis2: #Make diagonal plots different
-                #TODO Interpolate missing values
+            if axis1 == axis2:
+                #Make diagonal plots different
                 benign_sd = list(bc_data[bc_data['class'] == 2][axis1])
                 malig_sd = list(bc_data[bc_data['class'] == 4][axis1])
 
@@ -97,6 +137,7 @@ def scat_matrix():
                 #TODO verify why some graphs look like >1 when normalized
             else:
                 #Set low alpha so overlapping points look darker, alter size of dot instead?
+                #TODO make repeat points bigger and not just darker
                 subs[i, j].scatter(bc_data[axis1], bc_data[axis2], alpha=0.1, c=colors, s=2)
                 benign_a1 = list(bc_data[bc_data['class'] == 2][axis1])
                 malig_a1 = list(bc_data[bc_data['class'] == 4][axis1])
