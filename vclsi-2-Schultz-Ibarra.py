@@ -7,12 +7,7 @@ import numpy as np
 bc_data_full = pd.read_excel('breast-cancer-wisconsin.xlsx')
 
 def color_list(variableList):
-    color_list = []
-    for row in variableList:
-        if row == 2:
-            color_list.append('blue')
-        else:
-            color_list.append('red')
+    color_list = ['blue' if row == 2 else "red" for row in variableList]
     return color_list
 
 def cluster_center(points):
