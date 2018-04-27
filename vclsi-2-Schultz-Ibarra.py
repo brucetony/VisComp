@@ -89,7 +89,8 @@ def scat_matrix():
     #TODO make more general, input parameters = data + list of columns + group separator?
     # Using pandas just to import data
     columns = list(pd.read_csv('reduced_data.csv').columns.values)
-    if columns[0] == 'Unnamed: 0': #In case using old data set
+    # In case using old data set
+    if columns[0] == 'Unnamed: 0':
         columns = columns[1:]
     bc_data = pd.read_excel('breast-cancer-wisconsin.xlsx')
 
@@ -120,8 +121,8 @@ def scat_matrix():
                 malig_sd = list(malig_data[axis1])
 
                 #Generate histogram, density parameter means normalized
-                subs[i, j].hist(benign_sd, color = 'blue', label = 'benign', histtype='bar', density=True)
-                subs[i, j].hist(malig_sd, color='red', label='malig', histtype='bar', density=True)
+                subs[i, j].hist(benign_sd, color = 'blue', label = 'benign', histtype='bar')
+                subs[i, j].hist(malig_sd, color='red', label='malig', histtype='bar')
                 subs[i, j].set_title(axis1)
                 #axes[i, j].xlabel(axis1)
                 #axes[i, j].ylabel('Frequency')
@@ -132,7 +133,7 @@ def scat_matrix():
             else:
                 #Generate sizes by counting number of times a point occurs
                 datapoints = list(zip(bc_data[axis1], bc_data[axis2]))
-                sizes = [datapoints.count(point) for point in datapoints]
+                sizes = [datapoints.count(point)*2 for point in datapoints]
 
                 #Create scatter plot at position i,j using created sizes/colors, alpha used for overlapping points
                 subs[i, j].scatter(bc_data[axis1], bc_data[axis2], alpha=0.25, c=colors, s=sizes)
@@ -143,7 +144,7 @@ def scat_matrix():
                 all_points = [benign_scatter, malig_scatter]
                 print('DSC of {} and {} = {}'.format(axis1, axis2, DSC(all_points)))
 
-            # Increase counter
+            # Increase counter to change position
             if i < size-1:
                 i += 1
             else:
