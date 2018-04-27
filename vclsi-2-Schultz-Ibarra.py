@@ -104,21 +104,25 @@ def scat_matrix():
     i = 0
     j = 0
 
-    # Create colors list
+    #Create colors list
     colors = ["blue" if row is 2 else "red" for row in list(bc_data['class'])]
+
+    #Separate Data
+    benign_data = bc_data[bc_data['class'] == 2]
+    malig_data = bc_data[bc_data['class'] == 4]
 
     #Iterate through column names and generate plots
     for axis1 in columns:
         for axis2 in columns:
             if axis1 == axis2:
                 #Make diagonal plots different
-                benign_sd = list(bc_data[bc_data['class'] == 2][axis1])
-                malig_sd = list(bc_data[bc_data['class'] == 4][axis1])
+                benign_sd = list(benign_data[axis1])
+                malig_sd = list(malig_data[axis1])
 
                 #Generate histogram, density parameter means normalized
                 subs[i, j].hist(benign_sd, color = 'blue', label = 'benign', histtype='bar', density=True)
                 subs[i, j].hist(malig_sd, color='red', label='malig', histtype='bar', density=True)
-                subs[i, j].set_title(axis1)  # Can you optional 'y=###' parameter to move title
+                subs[i, j].set_title(axis1)
                 #axes[i, j].xlabel(axis1)
                 #axes[i, j].ylabel('Frequency')
 
@@ -126,19 +130,18 @@ def scat_matrix():
                 #TODO flip so diagonal goes the other way?
                 #TODO verify why some graphs look like >1 when normalized
             else:
+                #Generate sizes by counting number of times a point occurs
                 datapoints = list(zip(bc_data[axis1], bc_data[axis2]))
                 sizes = [datapoints.count(point) for point in datapoints]
 
-                #TODO Fix colors, something is off
-                subs[i, j].scatter(bc_data[axis1], bc_data[axis2], alpha=1, c=colors, s=sizes)
+                #Create scatter plot at position i,j using created sizes/colors, alpha used for overlapping points
+                subs[i, j].scatter(bc_data[axis1], bc_data[axis2], alpha=0.25, c=colors, s=sizes)
 
                 #Setup to calculate DSC
-                benign_a1 = list(bc_data[bc_data['class'] == 2][axis1])
-                malig_a1 = list(bc_data[bc_data['class'] == 4][axis1])
-                benign_a2 = list(bc_data[bc_data['class'] == 2][axis2])
-                malig_a2 = list(bc_data[bc_data['class'] == 4][axis2])
-                all_points = [list(zip(benign_a1, benign_a2)), list(zip(malig_a1, malig_a2))]
-                #print('DSC of {} and {} = {}'.format(axis1, axis2, DSC(all_points)))
+                benign_scatter = list(zip(benign_data[axis1], benign_data[axis2]))
+                malig_scatter = list(zip(malig_data[axis1], malig_data[axis2]))
+                all_points = [benign_scatter, malig_scatter]
+                print('DSC of {} and {} = {}'.format(axis1, axis2, DSC(all_points)))
 
             # Increase counter
             if i < size-1:
