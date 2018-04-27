@@ -1,10 +1,38 @@
 #Exercise 1
 
+import os
+import math
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+from sklearn.decomposition import PCA
+from itertools import product
 
-bc_data_full = pd.read_excel('breast-cancer-wisconsin.xlsx')
+
+def get_f_score(attribute, groups, exclude=[]):
+    """
+    Calculates the F score of an attribute between to groups (for now)
+    :param data: Pandas dataframe
+    :param column: Pandas Series
+    :param groupby: Column with the categories
+    :param exclude: List of columns to be excluded from the calculation
+    """
+    if attribute.name in exclude:
+        return None
+    else:
+        # Get means for groups
+        grand_mean = attribute.mean()
+        g1_mean = groups[0][attribute.name].mean()  # Group 1
+        g2_mean = groups[1][attribute.name].mean()  # Group 2
+
+        g1_diff = [(i - g1_mean) ** 2 for i in groups[0][attribute.name]]  # Group 1
+        g2_diff = [(i - g2_mean) ** 2 for i in groups[1][attribute.name]]  # Group 2
+
+        numerator = (g1_mean - grand_mean) ** 2 + (g2_mean - grand_mean) ** 2
+        denom = (1 / (len(groups[0][attribute.name]) - 1)) * sum(g1_diff) + \
+                (1 / (len(groups[1][attribute.name]) - 1)) * sum(g2_diff)
+
+        return numerator / denom
 
 def cluster_center(points):
     '''
@@ -46,113 +74,93 @@ def DSC(point_list):
             closer_points += 1
     return (100*closer_points/len(same_cluster_distances))
 
-def find_missing_values(pds_array):
+def interpolate_by_mean(column):
+    """
+    Interpolates missing values by the mean
+    :param column: A pandas dataframe
+    :return: A pandas dataframe containing the column names which have null values
+    """
+    return column.fillna(int(round(column.mean()))) if any(column.isnull()) else column
+
+def scat_matrix(filepath, num_attr):
     '''
-    :param A pandas dataframe:
-    :return: A list containing the column names which have null values
+    Generates scatterplots of the attribute combinations that had the highest num_attr F scores \
+    in the non-diagonal spots and histograms of the benign and malignant frequencies for each attr. \
+    Also calculates distance consistency for every combination of attributes used and prints out results
+    :param filepath: Filepath destination to the data
+    :param num_attr: Number of attributes to be used in graphs
+    :return:
     '''
-    null_vectors = []
-    for i in pds_array.columns.values:
-        if pds_array[i].isnull().values.any():
-            null_vectors.append(i) #Add to list of vectors with missing values
-            print("{} contains null values...fixing".format(i))
-    if not null_vectors:
-        print("No null values were found")
-    return null_vectors
+    # Read file to pandasDF
+    data_df = pd.read_excel(os.path.abspath(filepath), index_col="code")
 
-def interpolate_values(pandasDF):
-    '''
-    Interpolate null values using average for vector by class
-    :param pandasDF: Full pandas dataframe
-    :return: Concatenated pandas dataframe with null values replaced
-    '''
-    null_vectors = find_missing_values(pandasDF)
-    for vector in null_vectors:
-        # Slice empty vectors
-        benign = pandasDF[pandasDF['class'] == 2]
-        malig = pandasDF[pandasDF['class'] == 4]
+    # For the moment let's just interpolate missing data by class
+    # Interpolating missing values to each column
+    benign_imputed = data_df[data_df["class"]==2].apply(interpolate_by_mean, axis=0)
+    malig_imputed = data_df[data_df["class"]==4].apply(interpolate_by_mean, axis=0)
+    data_imputed = pd.concat([malig_imputed, benign_imputed])
 
-        # Drop na and find average for each class, rounded to nearest integer
-        benign_av = int(round(np.mean(benign[vector].dropna())))
-        malig_av = int(round(np.mean(malig[vector].dropna())))
+    # Calculate F-Score for the imputed data
+    fscores = data_imputed.apply(get_f_score, axis=0, exclude=["class"],
+                                 groups=[benign_imputed, malig_imputed])
 
-        # Fill null with average values
-        benign = benign.fillna(benign_av)
-        malig = malig.fillna(malig_av)
+    # Sort fscores
+    fscores = fscores.sort_values(ascending=False)
 
-        # Concatenate pandas frames
-        pandasDF_no_null = pd.concat([benign, malig])
-    return pandasDF_no_null
-
-
-def scat_matrix():
-    #TODO make more general, input parameters = data + list of columns + group separator?
-    # Using pandas just to import data
-    columns = list(pd.read_csv('reduced_data.csv').columns.values)
-    # In case using old data set
-    if columns[0] == 'Unnamed: 0':
-        columns = columns[1:]
-    bc_data = pd.read_excel('breast-cancer-wisconsin.xlsx')
-
-    # Interpolate missing data
-    bc_data = interpolate_values(bc_data)
-
+    # Subset data based on most significant attributes
     # Generate figure for plots to be plotted in
-    size = len(columns)
-    fig, subs = plt.subplots(size, size, figsize=(15, 15))
+    n = num_attr  # Number of attributes to be used
+    fig, subs = plt.subplots(n, n, figsize=(15, 15))
 
-    # Used for tracking plot placement
-    i = 0
-    j = 0
+    # zip together the column names and the position on the matrix
+    # this will avoid using nested loops
+    col = product(fscores[:n].index, repeat=2)
+    idx = product(range(n), repeat=2)
 
     # Create colors list
-    colors = ["blue" if row is 2 else "red" for row in list(bc_data['class'])]
-
-    # Separate Data
-    benign_data = bc_data[bc_data['class'] == 2]
-    malig_data = bc_data[bc_data['class'] == 4]
+    colors = ["blue" if row is 2 else "red" for row in list(data_imputed['class'])]
 
     # Collect DSC values
     DSC_values = []
 
-    # Iterate through column names and generate plots
-    for axis1 in columns:
-        for axis2 in columns:
-            if axis1 == axis2:
-                # Make diagonal plots different
-                benign_sd = list(benign_data[axis1])
-                malig_sd = list(malig_data[axis1])
+    # iterate over columns(c1,c2) combinations and plot
+    for attr, idx in zip(col, idx):
+        # Unpacking values
+        i, j = idx
+        attrx, attry = attr
 
-                # Generate histogram, density parameter means normalized
-                subs[i, j].hist(benign_sd, color = 'blue', label = 'benign', histtype='bar', edgecolor='black')
-                subs[i, j].hist(malig_sd, color='red', label='malig', histtype='bar', edgecolor='black')
-                subs[i, j].set_title(axis1)
-                #axes[i, j].xlabel(axis1)
-                #axes[i, j].ylabel('Frequency')
-            else:
-                # Generate sizes by counting number of times a point occurs
-                datapoints = list(zip(bc_data[axis1], bc_data[axis2]))
-                sizes = [datapoints.count(point)*2 for point in datapoints]
+        if i == j:
+            subs[i, j].hist(data_imputed[attrx][data_imputed["class"] == 2], color="blue",
+                            alpha=0.5, histtype='bar', label="benign", edgecolor='black')
+            subs[i, j].hist(data_imputed[attrx][data_imputed["class"] == 4], color="red",
+                            alpha=0.5, histtype='bar', label="malignant", edgecolor='black')
 
-                # Create scatter plot at position i,j using created sizes/colors, alpha used for overlapping points
-                subs[i, j].scatter(bc_data[axis1], bc_data[axis2], alpha=0.25, c=colors, s=sizes)
+        else:
+            # Generate sizes by counting number of times a point occurs
+            datapoints = list(zip(data_imputed[attrx], data_imputed[attry]))
+            sizes = [datapoints.count(point)*2 for point in datapoints]
 
-                # Setup to calculate DSC
-                benign_scatter = list(zip(benign_data[axis1], benign_data[axis2]))
-                malig_scatter = list(zip(malig_data[axis1], malig_data[axis2]))
-                all_points = [benign_scatter, malig_scatter]
-                DSC_values.append(('{} and {}'.format(axis1, axis2), DSC(all_points)))
+            # Create scatter plot at position i,j using created sizes/colors, alpha used for overlapping points
+            subs[i, j].scatter(data_imputed[attrx], data_imputed[attry], alpha=0.25, c=colors, s=sizes)
 
-            # Increase counter to change position
-            if i < size-1:
-                i += 1
-            else:
-                i = 0
-                j += 1
+            # Setup to calculate DSC
+            benign_scatter = list(zip(benign_imputed[attrx], benign_imputed[attry]))
+            malig_scatter = list(zip(malig_imputed[attrx], malig_imputed[attry]))
+            all_points = [benign_scatter, malig_scatter]
+            DSC_values.append(('{} and {}'.format(attrx, attry), DSC(all_points)))
+
+        # Print titles for columns
+        if i == 0:
+            subs[i, j].set_title(attry)
+
+        # Print titles for rows
+        if j == 0:
+            subs[i, j].set_ylabel(attrx)
 
     # Figure attributes
     subs[0, 0].legend(bbox_to_anchor=(-0.2, 1.0))
-    fig.suptitle('Malignant and Benign Tumor Values', x=0.5, y=1.0)
+    fig.suptitle('Malignant and Benign Tumor Values', x=0.5, y=1)
+
     #fig.savefig('Scatter Plot.png')
     fig.show()
 
@@ -161,4 +169,4 @@ def scat_matrix():
     print("The highest distance consistancy is {} and found between {}".format(DSC_values[-1][1], DSC_values[-1][0]))
 
 
-scat_matrix()
+scat_matrix('breast-cancer-wisconsin.xlsx', 5)
