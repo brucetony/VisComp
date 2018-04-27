@@ -6,10 +6,6 @@ import numpy as np
 
 bc_data_full = pd.read_excel('breast-cancer-wisconsin.xlsx')
 
-def color_list(variableList):
-    color_list = ['blue' if row == 2 else "red" for row in variableList]
-    return color_list
-
 def cluster_center(points):
     '''
     Computes the center point from a list of points
@@ -104,12 +100,12 @@ def scat_matrix():
     size = len(columns)
     fig, subs = plt.subplots(size, size, figsize=(15, 15))
 
-    #Create colors list
-    colors = color_list(list(bc_data['class']))
-
     #Used for tracking plot placement
     i = 0
     j = 0
+
+    # Create colors list
+    colors = ["blue" if row is 2 else "red" for row in list(bc_data['class'])]
 
     #Iterate through column names and generate plots
     for axis1 in columns:
@@ -122,24 +118,27 @@ def scat_matrix():
                 #Generate histogram, density parameter means normalized
                 subs[i, j].hist(benign_sd, color = 'blue', label = 'benign', histtype='bar', density=True)
                 subs[i, j].hist(malig_sd, color='red', label='malig', histtype='bar', density=True)
-                subs[i, j].set_title(axis1) #Can you optional 'y=###' parameter to move title
-                #TODO set axex ranges
+                subs[i, j].set_title(axis1)  # Can you optional 'y=###' parameter to move title
                 #axes[i, j].xlabel(axis1)
                 #axes[i, j].ylabel('Frequency')
-                #TODO a third thing is being plotted as well --> FIND AND REMOVE
+
                 #TODO put border around bar
                 #TODO flip so diagonal goes the other way?
                 #TODO verify why some graphs look like >1 when normalized
             else:
-                #Set low alpha so overlapping points look darker, alter size of dot instead?
-                #TODO make repeat points bigger and not just darker
-                subs[i, j].scatter(bc_data[axis1], bc_data[axis2], alpha=0.1, c=colors, s=2)
+                datapoints = list(zip(bc_data[axis1], bc_data[axis2]))
+                sizes = [datapoints.count(point) for point in datapoints]
+
+                #TODO Fix colors, something is off
+                subs[i, j].scatter(bc_data[axis1], bc_data[axis2], alpha=1, c=colors, s=sizes)
+
+                #Setup to calculate DSC
                 benign_a1 = list(bc_data[bc_data['class'] == 2][axis1])
                 malig_a1 = list(bc_data[bc_data['class'] == 4][axis1])
                 benign_a2 = list(bc_data[bc_data['class'] == 2][axis2])
                 malig_a2 = list(bc_data[bc_data['class'] == 4][axis2])
                 all_points = [list(zip(benign_a1, benign_a2)), list(zip(malig_a1, malig_a2))]
-                print('DSC of {} and {} = {}'.format(axis1, axis2, DSC(all_points)))
+                #print('DSC of {} and {} = {}'.format(axis1, axis2, DSC(all_points)))
 
             # Increase counter
             if i < size-1:
@@ -151,7 +150,7 @@ def scat_matrix():
     # Figure attributes
     subs[0, 0].legend(bbox_to_anchor=(-0.2, 1.0))
     fig.suptitle('Malignant and Benign Tumor Values', x=0.5, y=1.0)
-    fig.savefig('Scatter Plot.png')
+    #fig.savefig('Scatter Plot.png')
     fig.show()
 
 scat_matrix()
