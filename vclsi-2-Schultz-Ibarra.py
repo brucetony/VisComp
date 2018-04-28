@@ -282,4 +282,9 @@ fig, ax = plt.subplots(1, 1, figsize=(9, 9))
 colors = get_colors_cmappalette(summary.index)
 ax = plot_hbar(ax, xticks=summary.index.values, colors=colors,
                values = summary["cumulative_proportion_of_variance_explained"])
+
+# Create a line at the 90% mark to see how many components are needed
+plt.axvline(x=0.9, color='r', linestyle='--')
+
+
 fig.show()
