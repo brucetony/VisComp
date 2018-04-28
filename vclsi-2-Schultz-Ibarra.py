@@ -3,9 +3,12 @@
 import os
 import math
 import matplotlib.pyplot as plt
+import matplotlib
 import pandas as pd
 import numpy as np
+import palettable
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 from itertools import product
 
 
@@ -169,4 +172,114 @@ def scat_matrix(filepath, num_attr):
     print("The highest distance consistancy is {} and found between {}".format(DSC_values[-1][1], DSC_values[-1][0]))
 
 
-scat_matrix('breast-cancer-wisconsin.xlsx', 5)
+#scat_matrix('breast-cancer-wisconsin.xlsx', 5)
+
+def runPCA(wide, exclude=[]):
+    '''
+    Perform PCA on a dataset
+    :param wide: Pandas dataset
+    :param exclude: columns to exclude during PCA analysis
+    :return:
+    '''
+
+    # Drop excluded columns (non-PCA features)
+    wide = wide.drop(columns=exclude)
+
+    # Standardize data
+    #wide = StandardScaler().fit_transform(wide)
+
+    # Initialize PCA class with default values
+    pca = PCA()
+
+    # Get scores of PCA (Fit PCA)
+    scores = pca.fit_transform(wide)
+
+    # Get loadings
+    loadings = pca.components_
+
+    # Get aditional information out of PCA (summary)
+    sd = scores.std(axis=0)
+    var = pca.explained_variance_ratio_
+    cumVar = var.cumsum()
+
+    # Create summay file
+    summary = np.array([sd, var, cumVar]).T
+
+    # Create headers
+    header = ["PC{0}".format(x + 1) for x in range(summary.shape[0])]
+
+    # Convert loadings, scores and summaries to Pandas DataFrame rename index
+    # TODO use standardized data, fix below commands to work with lists not np arrays
+    df_scores = pd.DataFrame(data=scores, index=wide.index, columns=header)
+    df_loadings = pd.DataFrame(data=loadings, index=header, columns=wide.columns)
+    df_summary = pd.DataFrame(data=summary, index=header, columns=["standard_deviation",
+                                                                   "proportion_of_variance_explained",
+                                                                   "cumulative_proportion_of_variance_explained"])
+
+    return df_scores, df_loadings, df_summary
+
+def plot_hbar(ax, xticks, values, colors="b",lw=None):
+    """
+    This function draws an horizontal bar graph
+    """
+    # Calculate width for bards
+    width = 1/float(len(values)) + .5
+
+    # Calculates positions for bars
+    ticks = np.arange(len(xticks)) + 0.5
+
+    # Horizontal barplot
+    ax.barh(y=ticks, width=values, height=0.8, color=colors, align='center',
+            linewidth=lw)
+
+    # Setting ticks
+    ax.set_yticks(ticks)
+
+    # Stablishing ticks rotation
+    ax.set_yticklabels(xticks,rotation='horizontal')
+
+    # Return axis
+    return ax
+
+def get_colors_cmappalette(elements):
+    palette = palettable.colorbrewer.sequential.Blues_9
+
+    # Get a color map
+    mpl_colors = palette.mpl_colors
+
+    # Subsetting colors as python default
+    mpl_colors = mpl_colors[int(3):int(palette.number)]
+
+    # Re calculate new colormap based on the colors.
+    mpl_colormap = matplotlib.colors.LinearSegmentedColormap.from_list(
+        colors=mpl_colors,
+        name='subseted')
+
+    # Pic the ammount of colors necesary from the file
+    # Creates a np array of the list rangin form 0-1
+    colPosition = np.arange(0, 1, 1.0 / len(elements))
+
+    # Get an array of positions in the colormap
+    colPosition = np.array([x + (1.0 / (len(elements) * 2)) for x in colPosition])
+
+    # Get list of colors out of the positions
+    colorList = mpl_colormap(colPosition)
+
+    # Return colorList
+    return colorList
+
+path = "breast-cancer-wisconsin.xlsx"
+data_df = pd.read_excel(os.path.abspath(path),index_col="code")
+data_2_imputed = data_df[data_df["class"]==2].apply(interpolate_by_mean, axis=0)
+data_4_imputed = data_df[data_df["class"]==4].apply(interpolate_by_mean, axis=0)
+data_imputed = pd.concat([data_4_imputed,data_2_imputed])
+
+# Running PCA
+scores, loadings, summary = runPCA(data_imputed)
+
+# Plotting
+fig, ax = plt.subplots(1, 1, figsize=(9, 9))
+colors = get_colors_cmappalette(summary.index)
+ax = plot_hbar(ax, xticks=summary.index.values, colors=colors,
+               values = summary["cumulative_proportion_of_variance_explained"])
+fig.show()
