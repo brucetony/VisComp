@@ -187,6 +187,10 @@ def runPCA(data, exclude=[]):
     # Drop excluded columns (non-PCA features)
     data = data.drop(columns=exclude)
 
+    # Standardize data
+    data_s = StandardScaler().fit_transform(data)
+    data = pd.DataFrame(data_s, index=data_imputed.index, columns=data_imputed.columns)
+
     # Initialize PCA class with default values
     pca = PCA()
 
@@ -224,9 +228,6 @@ def get_colors_cmappalette(elements):
 
     # Subsetting colors as python default
     mpl_colors = mpl_colors[int(3):int(palette.number)]# Determine max DSC value and return highest one
-DSC_values= get_DSC(data_imputed, columns.index)
-DSC_values.sort(key=lambda x: x[1])
-print("The highest distance consistancy is {} and found between {}".format(DSC_values[-1][1], DSC_values[-1][0]))
 
     # Re calculate new colormap based on the colors.
     mpl_colormap = matplotlib.colors.LinearSegmentedColormap.from_list(
@@ -301,12 +302,8 @@ DSC_values= get_DSC(data_imputed, columns.index)
 DSC_values.sort(key=lambda x: x[1])
 print("The highest distance consistancy is {} and found between {}".format(DSC_values[-1][1], DSC_values[-1][0]))
 
-# Standardize data
-data_s = StandardScaler().fit_transform(data_imputed) #PLEASE note we are standardizing the data
-data_s = pd.DataFrame(data_s,index=data_imputed.index,columns=data_imputed.columns)
-
 # PCA
-scores, loadings, summary = runPCA(data_s)
+scores, loadings, summary = runPCA(data_imputed)
 
 # Plotting barplot to see the ammount of variance explain by the components
 fig, ax = plt.subplots(1, 1, figsize=(9, 9))
@@ -316,6 +313,7 @@ ax = plot_hbar(ax, xticks=summary.index.values, colors=colors,
 
 # Create a line at the 90% mark to see how many components are needed
 plt.axvline(x=0.9, color='r', linestyle='--')
+plt.show()
 
 # Plot matrix scatterplot for the first 5 components
 scores["class"] = data_imputed["class"]
@@ -339,12 +337,8 @@ fscores = data_imputed.apply(get_f_score, axis=0, exclude=["class"],
 # Re weight data (_w)
 data_w = data_imputed.apply(reweight, axis=0, weights=fscores, exclude=["class"])
 
-# Standardize data (_w)
-data_ws = StandardScaler().fit_transform(data_w)
-data_ws = pd.DataFrame(data_w, index=data_imputed.index, columns=data_imputed.columns)
-
 # Running PCA on weighted data (_w)
-scores_w, loadings_w, summary_w = runPCA(data_ws)
+scores_w, loadings_w, summary_w = runPCA(data_w)
 
 # plot scatterplot to compare reweigthed values and standard values for first 2PC
 fig, ax = plt.subplots(1, 2, figsize=(9, 5))
@@ -361,3 +355,5 @@ ax[0].scatter(scores_w["PC1"], scores_w["PC2"], alpha=0.25, c=colors, s=sizes)
 ax[0].set_title("weighted")
 ax[1].scatter(scores["PC1"], scores["PC2"], alpha=0.25, c=colors, s=sizes)
 ax[1].set_title("Normal")
+fig.savefig('Weighted vs. Unweighted.png')
+fig.show()
