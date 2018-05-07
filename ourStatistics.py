@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn import manifold
 from sklearn.decomposition import PCA
 
 def interpolate_by_mean(column):
@@ -115,3 +116,27 @@ def runPCA(data, exclude=[]):
                                                                    "cumulative_proportion_of_variance_explained"])
 
     return df_scores, df_loadings, df_summary
+
+def slice_and_PCA(pandas_data, column_name, group_name):
+
+    #Slice numeric data
+    num_data = pandas_data[pandas_data[column_name] == group_name].select_dtypes(include=[np.number])
+
+    #Standardize and run PCA
+    std_data = pd.DataFrame(StandardScaler().fit_transform(num_data))
+    scores_data, loadings_data, summary_data = runPCA(std_data)
+    return scores_data
+
+def iso(std_data, num_neighbors, num_comp):
+    '''
+    Takes standardized pandas_data and returns ISOMAP component pandas list
+    :param std_data: A pandas array containing standardized data
+    :param num_neighbors: number of neighbors to use in ISOMAP
+    :param num_comp: number of components to be written to output pandas array
+    :return: Pandas array with each column containing Component and its values
+    '''
+    iso = manifold.Isomap(n_neighbors=num_neighbors, n_components=num_comp)
+    iso.fit(std_data)
+    pre_data = iso.transform(std_data)
+    col_list = ["Component {}".format(i) for i in range(1, num_comp+1)]
+    return pd.DataFrame(pre_data, columns=col_list)
