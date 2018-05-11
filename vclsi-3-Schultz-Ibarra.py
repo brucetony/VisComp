@@ -100,8 +100,8 @@ for j in range(len(initiate)):
         ax[i].scatter(bc_data_tsne['{}_Perp{}_Component 1'.format(initiate[j], perplexities[i])], \
                       bc_data_tsne['{}_Perp{}_Component 2'.format(initiate[j], perplexities[i])]\
                       , color=colors, label=labels)
-    #ax[0].legend(bbox_to_anchor=(-0.2, 1.0))
-    fig.suptitle("{} initialization".format(initiate[j]), x=0.5, y=1.2, fontsize=14)
-plt.xlabel("{} Component 1".format(initiate[j]))
-plt.ylabel("{} Component 2".format(initiate[j]))
-plt.show()
+        ax[i].set_xlabel("{} Component 1".format(initiate[j]))
+        if i == 0:
+            ax[i].set_ylabel("{} Component 2".format(initiate[j]))
+    fig.suptitle("{} initialization".format(initiate[j]), x=0.5, y=1.0, fontsize=18)
+    plt.show()
