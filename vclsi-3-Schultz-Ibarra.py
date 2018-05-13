@@ -134,9 +134,9 @@ for j in range(len(initiate)):
 
         # Create graphs
         ax[i].set_title("Perplexity = {}".format(perplexities[i]))
-        ax[i].scatter(bc_data_tsne['{}_Perp{}_Component 1'.format(initiate[j], perplexities[i])], \
-                      bc_data_tsne['{}_Perp{}_Component 2'.format(initiate[j], perplexities[i])] \
-                      , color=colors, label=labels)
+        ax[i].scatter(bc_data_tsne['{}_Perp{}_Component 1'.format(initiate[j], perplexities[i])],
+                      bc_data_tsne['{}_Perp{}_Component 2'.format(initiate[j], perplexities[i])],
+                      color=colors, label=labels)
         ax[i].set_xlabel("{} Component 1".format(initiate[j]))
         if i == 0:
             ax[i].set_ylabel("{} Component 2".format(initiate[j]))
