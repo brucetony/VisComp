@@ -1,4 +1,6 @@
+import os
 import pandas as pd
+from graphviz import Graph
 import numpy as np
 from scipy import stats
 from sklearn import manifold
@@ -7,6 +9,7 @@ from matplotlib.lines import Line2D
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from ourStatistics import interpolate_by_mean as ibm, runPCA
 
 
@@ -141,3 +144,24 @@ for j in range(len(initiate)):
 
     plt.show()
 
+# Read file to pandasDF
+file_path = "breast-cancer-wisconsin.xlsx"
+breast_df = pd.read_excel(os.path.abspath(file_path), index_col="code")
+
+# Fill missing values
+benign_imputed = breast_df[breast_df["class"] == 2].apply(ibm, axis=0)
+malign_imputed = breast_df[breast_df["class"] == 4].apply(ibm, axis=0)
+breast_imputed_df = pd.concat([malign_imputed, benign_imputed])
+# breast_df = breast_df.apply(ibm, axis=0)
+
+# Get Pearson Correlation Matrix
+breast_corr_df  = breast_df.corr(method='pearson', min_periods=1)
+
+###########
+# Creating a simple graph
+###########
+
+g = Graph("Simple Graph", filename="vclsi-3-Schultz-Ibarra-simple_graph.gv")
+g.edge("a","z")
+g.edge("a","x")
+g.view()
