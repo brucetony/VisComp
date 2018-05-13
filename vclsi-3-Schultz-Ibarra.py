@@ -44,7 +44,7 @@ scores_tCSs, loadings_tCSs, summary_tCSs = runPCA(tCSs_data)
 cCSs_iso = iso(cCSs_data, 10, 2)
 tCSs_iso = iso(tCSs_data, 10, 2)
 
-Plot the 2 side-by-side for comparison
+# Plot the 2 side-by-side for comparison
 fig, ax = plt.subplots(1, 2, figsize=(15, 5))
 
 ax[0].set_title("Principal Component Analysis")
@@ -138,6 +138,4 @@ for j in range(len(initiate)):
         ax[i].set_xlabel("{} Component 1".format(initiate[j]))
         if i == 0:
             ax[i].set_ylabel("{} Component 2".format(initiate[j]))
-
-    plt.show()
 
