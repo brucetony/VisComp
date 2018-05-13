@@ -60,6 +60,12 @@ ax[0].legend(loc="upper left")
 # Read breast cancer data and interpolate values
 bc_data = pd.read_excel('breast-cancer-wisconsin.xlsx').apply(ibm, axis=0)
 
+# Standardize dataset - except class
+class_col = bc_data.pop('class')
+#bc_data_std = pd.DataFrame(StandardScaler().fit_transform(bc_data))  # Standardize
+bc_data_std = pd.DataFrame(MinMaxScaler().fit_transform(bc_data))  # Normalize
+bc_data_std['class'] = class_col
+
 # Define a simple t-SNE function
 def tsne_reduction(pandas_data, n_comps=2, verb=1, perp=30, num_iter=300, initial="random"):
     '''
@@ -82,9 +88,9 @@ perplexities = [5,10,20,30,40,50]
 initiate = ['random', 'pca']
 
 # Generate new pandas table for our results and random permutation
-bc_data_tsne = bc_data.copy()
-colors = ["blue" if row is 2 else "red" for row in list(bc_data['class'])]
-labels = ["benign" if row is 2 else "malignant" for row in list(bc_data['class'])]
+bc_data_tsne = bc_data_std.copy()
+colors = ["blue" if row is 2 else "red" for row in list(bc_data_tsne['class'])]
+labels = ["benign" if row is 2 else "malignant" for row in list(bc_data_tsne['class'])]
 bc_data_tsne['colors'] = colors
 bc_data_tsne['labels'] = labels
 
