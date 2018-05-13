@@ -104,7 +104,7 @@ def remove_outliers(pandas_data, within_std=3):
 perplexities = [5, 10, 20, 30, 40, 50]
 initiate = ['random', 'pca']
 
-# Generate new pandas table for our results and random permutation
+# Generate new pandas table for our results
 bc_data_tsne = bc_data_std.copy()
 colors = ["blue" if row is 2 else "red" for row in list(bc_data_tsne['class'])]
 labels = ["benign" if row is 2 else "malignant" for row in list(bc_data_tsne['class'])]
@@ -113,7 +113,7 @@ bc_data_tsne['labels'] = labels
 
 # Iterate over perplexities and generate subplots
 for j in range(len(initiate)):
-    # Create initial figure
+    # Create initial figure and set legend/titles
     fig, ax = plt.subplots(1, len(perplexities), figsize=(30, 5))
     legend_ele = [Line2D([0], [0], color='w', label='benign', marker='o', markerfacecolor='b'),\
                   Line2D([0], [0], color='w', label='malignant', marker='o', markerfacecolor='r')]
