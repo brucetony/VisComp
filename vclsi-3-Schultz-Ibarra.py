@@ -4,14 +4,18 @@ from graphviz import Graph
 import numpy as np
 from scipy import stats
 from sklearn import manifold
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
+from itertools import combinations
 from ourStatistics import interpolate_by_mean as ibm, runPCA
+from palettable.cmocean.sequential import Dense_3
+from palettable.colorbrewer.qualitative import Set1_4
 
-
+'''
 def iso(std_data, num_neighbors, num_comp):
     """
     Takes standardized pandas_data and returns ISOMAP component pandas list
@@ -93,12 +97,12 @@ def tsne_reduction(pandas_data, n_comps=2, verb=1, perp=30, num_iter=300, initia
     return pd.DataFrame(tsne_results, columns=col_list)
 
 def remove_outliers(pandas_data, within_std=3):
-    '''
+    """
     Calculates z score for pandas dataframe and returns dataframe with entries that are within chosen deviation away
     :param pandas_data: Pandas Dataframe of data
     :param within_std: Number of standard deviations away from mean to accept
     :return: Dataframe with rows removed that are outside specified range
-    '''
+    """
     return pandas_data[(np.abs(stats.zscore(pandas_data)) < within_std).all(axis=1)]
 
 
@@ -142,6 +146,10 @@ for j in range(len(initiate)):
             ax[i].set_ylabel("{} Component 2".format(initiate[j]))
 
     plt.show()
+'''
+###########
+# part 2
+###########
 
 # Read file to pandasDF
 file_path = "breast-cancer-wisconsin.xlsx"
@@ -154,14 +162,47 @@ breast_imputed_df = pd.concat([malign_imputed, benign_imputed])
 # breast_df = breast_df.apply(ibm, axis=0)
 
 # Get Pearson Correlation Matrix
-breast_corr_df  = breast_df.corr(method='pearson', min_periods=1)
+breast_corr_df = breast_df.corr(method='pearson', min_periods=1)
 
 ###########
 # Creating a simple graph
 ###########
 
-g = Graph("Simple Graph", filename="vclsi-3-Schultz-Ibarra-simple_graph.png")
-
-g.edge("a","z")
-g.edge("a","x")
+g = Graph("Simple Graph", filename="vclsi-3-Schultz-Ibarra-simple_graph.gv")
+g.node("Me")
+g.edge("Me", "The girl I like")
+g.edge("Her boyfriend", "The girl I like")
 g.view()
+
+
+###########
+# Creating a graph of the pearson correlation
+###########
+
+# Create correlation graph
+breast_g = Graph("Breast Cancer", filename="vclsi-3-Schultz-Ibarra-breast_graph.gv", engine="circo")
+
+# Get colors for nodes
+node_colors = Set1_4.hex_colors
+print(node_colors)
+
+# Creating nodes in the graph
+for c in breast_corr_df.columns.tolist():
+    breast_g.node(c)
+
+# Get boolean matrix for values greater than the threshold.
+threshold = 0.6
+breast_corr_bool = breast_corr_df[breast_corr_df <= threshold].isnull()
+
+# Get color map to use
+cmap = Dense_3.mpl_colormap
+
+# Check if correlation coefficient covers the threshold if it does add edge
+for i, j in combinations(breast_corr_df.columns.tolist(), r=2):
+    if breast_corr_bool.loc[i, j]:
+        val = breast_corr_df.loc[i, j]
+        breast_g.edge(i, j, color=matplotlib.colors.to_hex(cmap(val)), penwidth=str((val*11)-6))
+
+breast_g.view()
+
+# breast_g = Graph("Breast Cancer", filename="vclsi-3-Schultz-Ibarra-breast_corr_graph.gv")
