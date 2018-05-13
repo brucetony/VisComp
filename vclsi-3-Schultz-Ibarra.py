@@ -44,7 +44,7 @@ scores_tCSs, loadings_tCSs, summary_tCSs = runPCA(tCSs_data)
 cCSs_iso = iso(cCSs_data, 10, 2)
 tCSs_iso = iso(tCSs_data, 10, 2)
 
-# Plot the 2 side-by-side for comparison
+Plot the 2 side-by-side for comparison
 fig, ax = plt.subplots(1, 2, figsize=(15, 5))
 
 ax[0].set_title("Principal Component Analysis")
@@ -57,8 +57,8 @@ ax[1].scatter(tCSs_iso['Component 1'], tCSs_iso['Component 2'], color='red', lab
 
 ax[0].legend(loc="upper left")
 
-# fig.savefig('dimension reduction comparison.png')
-# fig.show()
+fig.savefig('dimension reduction comparison.png')
+fig.show()
 
 # Part c
 
@@ -123,7 +123,8 @@ for j in range(len(initiate)):
         tsne_comps = tsne_reduction(bc_data, perp=i, initial=initiate[j], num_iter=300)
 
         # Remove outliers to allow us to see clusters/trends
-        tsne_comps = remove_outliers(tsne_comps, within_std=3)
+        #tsne_comps = remove_outliers(tsne_comps, within_std=3) # Uses zscore
+        tsne_comps = tsne_comps[tsne_comps.apply(lambda x: np.abs(x - x.median()) / x.std() < 3).all(axis=1)] # Median
 
         # Add data to our tsne dataframe
         bc_data_tsne['{}_Perp{}_Component 1'.format(initiate[j], perplexities[i])] = tsne_comps['Component 1']
@@ -139,3 +140,4 @@ for j in range(len(initiate)):
             ax[i].set_ylabel("{} Component 2".format(initiate[j]))
 
     plt.show()
+
