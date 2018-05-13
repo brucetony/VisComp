@@ -46,7 +46,7 @@ scores_tCSs, loadings_tCSs, summary_tCSs = runPCA(tCSs_data)
 cCSs_iso = iso(cCSs_data, 10, 2)
 tCSs_iso = iso(tCSs_data, 10, 2)
 
-Plot the 2 side-by-side for comparison
+# Plot the 2 side-by-side for comparison
 fig, ax = plt.subplots(1, 2, figsize=(15, 5))
 
 ax[0].set_title("Principal Component Analysis")
@@ -160,7 +160,8 @@ breast_corr_df  = breast_df.corr(method='pearson', min_periods=1)
 # Creating a simple graph
 ###########
 
-g = Graph("Simple Graph", filename="vclsi-3-Schultz-Ibarra-simple_graph.gv")
+g = Graph("Simple Graph", filename="vclsi-3-Schultz-Ibarra-simple_graph.png")
+
 g.edge("a","z")
 g.edge("a","x")
 g.view()
