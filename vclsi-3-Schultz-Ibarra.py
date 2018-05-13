@@ -9,7 +9,6 @@ from matplotlib.lines import Line2D
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from ourStatistics import interpolate_by_mean as ibm, runPCA
 
 
