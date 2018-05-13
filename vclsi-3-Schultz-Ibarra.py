@@ -1,4 +1,6 @@
+import os
 import pandas as pd
+from graphviz import Graph
 import numpy as np
 from scipy import stats
 from sklearn import manifold
@@ -132,10 +134,34 @@ for j in range(len(initiate)):
 
         # Create graphs
         ax[i].set_title("Perplexity = {}".format(perplexities[i]))
-        ax[i].scatter(bc_data_tsne['{}_Perp{}_Component 1'.format(initiate[j], perplexities[i])], \
-                      bc_data_tsne['{}_Perp{}_Component 2'.format(initiate[j], perplexities[i])] \
-                      , color=colors, label=labels)
+        ax[i].scatter(bc_data_tsne['{}_Perp{}_Component 1'.format(initiate[j], perplexities[i])],
+                      bc_data_tsne['{}_Perp{}_Component 2'.format(initiate[j], perplexities[i])],
+                      color=colors, label=labels)
         ax[i].set_xlabel("{} Component 1".format(initiate[j]))
         if i == 0:
             ax[i].set_ylabel("{} Component 2".format(initiate[j]))
 
+    plt.show()
+
+# Read file to pandasDF
+file_path = "breast-cancer-wisconsin.xlsx"
+breast_df = pd.read_excel(os.path.abspath(file_path), index_col="code")
+
+# Fill missing values
+benign_imputed = breast_df[breast_df["class"] == 2].apply(ibm, axis=0)
+malign_imputed = breast_df[breast_df["class"] == 4].apply(ibm, axis=0)
+breast_imputed_df = pd.concat([malign_imputed, benign_imputed])
+# breast_df = breast_df.apply(ibm, axis=0)
+
+# Get Pearson Correlation Matrix
+breast_corr_df  = breast_df.corr(method='pearson', min_periods=1)
+
+###########
+# Creating a simple graph
+###########
+
+g = Graph("Simple Graph", filename="vclsi-3-Schultz-Ibarra-simple_graph.png")
+
+g.edge("a","z")
+g.edge("a","x")
+g.view()
