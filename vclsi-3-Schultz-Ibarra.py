@@ -1,8 +1,11 @@
 import pandas as pd
 import numpy as np
+from scipy import stats
 from sklearn import manifold
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from sklearn.manifold import TSNE
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 from ourStatistics import interpolate_by_mean as ibm, runPCA
 
@@ -87,6 +90,15 @@ def tsne_reduction(pandas_data, n_comps=2, verb=1, perp=30, num_iter=300, initia
     col_list = ["Component {}".format(i) for i in range(1, n_comps + 1)]
     return pd.DataFrame(tsne_results, columns=col_list)
 
+def remove_outliers(pandas_data, within_std=3):
+    '''
+    Calculates z score for pandas dataframe and returns dataframe with entries that are within chosen deviation away
+    :param pandas_data: Pandas Dataframe of data
+    :param within_std: Number of standard deviations away from mean to accept
+    :return: Dataframe with rows removed that are outside specified range
+    '''
+    return pandas_data[(np.abs(stats.zscore(pandas_data)) < within_std).all(axis=1)]
+
 
 # Create lists of perplexities and initializing schemes to test
 perplexities = [5, 10, 20, 30, 40, 50]
@@ -103,16 +115,27 @@ bc_data_tsne['labels'] = labels
 for j in range(len(initiate)):
     # Create initial figure
     fig, ax = plt.subplots(1, len(perplexities), figsize=(30, 5))
+    legend_ele = [Line2D([0], [0], color='w', label='benign', marker='o', markerfacecolor='b'),\
+                  Line2D([0], [0], color='w', label='malignant', marker='o', markerfacecolor='r')]
+    ax[0].legend(handles=legend_ele, loc='upper left')
+    fig.suptitle("{} initialization".format(initiate[j]), x=0.5, y=1.0, fontsize=18)
     for i in range(len(perplexities)):
-        tsne_comps = tsne_reduction(bc_data, perp=i, initial=initiate[j])
+        tsne_comps = tsne_reduction(bc_data, perp=i, initial=initiate[j], num_iter=300)
+
+        # Remove outliers to allow us to see clusters/trends
+        tsne_comps = remove_outliers(tsne_comps, within_std=3)
+
+        # Add data to our tsne dataframe
         bc_data_tsne['{}_Perp{}_Component 1'.format(initiate[j], perplexities[i])] = tsne_comps['Component 1']
         bc_data_tsne['{}_Perp{}_Component 2'.format(initiate[j], perplexities[i])] = tsne_comps['Component 2']
+
+        # Create graphs
         ax[i].set_title("Perplexity = {}".format(perplexities[i]))
-        ax[i].scatter(bc_data_tsne['{}_Perp{}_Component 1'.format(initiate[j], perplexities[i])],
-                      bc_data_tsne['{}_Perp{}_Component 2'.format(initiate[j], perplexities[i])],
-                      color=colors, label=labels)
+        ax[i].scatter(bc_data_tsne['{}_Perp{}_Component 1'.format(initiate[j], perplexities[i])], \
+                      bc_data_tsne['{}_Perp{}_Component 2'.format(initiate[j], perplexities[i])] \
+                      , color=colors, label=labels)
         ax[i].set_xlabel("{} Component 1".format(initiate[j]))
         if i == 0:
             ax[i].set_ylabel("{} Component 2".format(initiate[j]))
-    fig.suptitle("{} initialization".format(initiate[j]), x=0.5, y=1.0, fontsize=18)
+
     plt.show()

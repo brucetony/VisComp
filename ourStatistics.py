@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from scipy import stats
 from sklearn import manifold
 from sklearn.decomposition import PCA
 
@@ -117,10 +118,13 @@ def runPCA(data, exclude=[]):
 
     return df_scores, df_loadings, df_summary
 
-def slice_and_PCA(pandas_data, column_name, group_name):
+def slice_and_PCA(pandas_data, column_name=False, group_name=False):
 
     #Slice numeric data
-    num_data = pandas_data[pandas_data[column_name] == group_name].select_dtypes(include=[np.number])
+    if column_name and group_name:
+        num_data = pandas_data[pandas_data[column_name] == group_name].select_dtypes(include=[np.number])
+    else:
+        num_data = pandas_data.select_dtypes(include=[np.number])
 
     #Standardize and run PCA
     std_data = pd.DataFrame(StandardScaler().fit_transform(num_data))
@@ -157,3 +161,12 @@ def tsne_reduction(pandas_data, n_comps=2, verb=1, perp=30, num_iter=300, initia
     tsne_results = tsne.fit_transform(pandas_data.values)
     col_list = ["Component {}".format(i) for i in range(1, n_comps+1)]
     return pd.DataFrame(tsne_results, columns=col_list)
+
+def remove_outliers(pandas_data, within_std=3):
+    '''
+    Calculates z score for pandas dataframe and returns dataframe with entries that are within chosen deviation away
+    :param pandas_data: Pandas Dataframe of data
+    :param within_std: Number of standard deviations away from mean to accept
+    :return: Dataframe with rows removed that are outside specified range
+    '''
+    return pandas_data[(np.abs(stats.zscore(pandas_data)) < within_std).all(axis=1)]
