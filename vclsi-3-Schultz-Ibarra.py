@@ -13,9 +13,9 @@ from sklearn.preprocessing import StandardScaler
 from itertools import combinations
 from ourStatistics import interpolate_by_mean as ibm, runPCA
 from palettable.cmocean.sequential import Dense_3
-from palettable.colorbrewer.qualitative import Set1_4
+from palettable.colorbrewer.qualitative import Set2_4
 
-'''
+
 def iso(std_data, num_neighbors, num_comp):
     """
     Takes standardized pandas_data and returns ISOMAP component pandas list
@@ -146,7 +146,7 @@ for j in range(len(initiate)):
             ax[i].set_ylabel("{} Component 2".format(initiate[j]))
 
     plt.show()
-'''
+
 ###########
 # part 2
 ###########
@@ -182,13 +182,30 @@ g.view()
 # Create correlation graph
 breast_g = Graph("Breast Cancer", filename="vclsi-3-Schultz-Ibarra-breast_graph.gv", engine="circo")
 
-# Get colors for nodes
-node_colors = Set1_4.hex_colors
-print(node_colors)
+# Removing diagonal from correlation matrix
+breast_corr_df_ndiag = (breast_corr_df[breast_corr_df < 1])
+column_max = breast_corr_df_ndiag.max()
+
+
+def select_color(val):
+    """
+    selects a color from a value
+    :param val: value to which select color
+    :return: color for the value
+    """
+    if val >= 0.9:
+        return Set2_4.hex_colors[0]
+    elif val >= 0.8:
+        return Set2_4.hex_colors[1]
+    elif val >= 0.6:
+        return Set2_4.hex_colors[2]
+    else:
+        return Set2_4.hex_colors[3]
+
 
 # Creating nodes in the graph
 for c in breast_corr_df.columns.tolist():
-    breast_g.node(c)
+    breast_g.node(c, color=select_color(column_max[c]), style="filled", fillcolor=select_color(column_max[c]))
 
 # Get boolean matrix for values greater than the threshold.
 threshold = 0.6
@@ -201,8 +218,6 @@ cmap = Dense_3.mpl_colormap
 for i, j in combinations(breast_corr_df.columns.tolist(), r=2):
     if breast_corr_bool.loc[i, j]:
         val = breast_corr_df.loc[i, j]
-        breast_g.edge(i, j, color=matplotlib.colors.to_hex(cmap(val)), penwidth=str((val*11)-6))
+        breast_g.edge(i, j, color=matplotlib.colors.to_hex(cmap(val)), penwidth=str((val*11)-5))
 
 breast_g.view()
-
-# breast_g = Graph("Breast Cancer", filename="vclsi-3-Schultz-Ibarra-breast_corr_graph.gv")
