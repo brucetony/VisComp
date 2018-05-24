@@ -4,6 +4,8 @@ from sklearn import mixture
 from scipy import misc, ndimage
 import matplotlib.pyplot as plt
 
+# np.set_printoptions(threshold=np.nan)  # For showing whole numpy array
+
 # Read image into array data
 raw_img_read = misc.imread("brain-noisy.png", True)
 
@@ -41,25 +43,47 @@ for pix_value in peak_values:
 
 peak_img = bin_masked_img.copy()
 peak_img = color.gray2rgb(peak_img)  # Convert to RGB array
-prim_colors = [[255, 0, 0], [0, 255, 0], [0, 0, 255]]  # Define primary colors [R, G, B]
+prime_colors = [[255, 0, 0], [0, 255, 0], [0, 0, 255]]  # Define primary colors [R, G, B]
 for counter, mask in enumerate(masks):
     if counter > 2:
         break
-    peak_img[mask] = prim_colors[counter]
+    peak_img[mask] = prime_colors[counter]
 
 # misc.toimage(peak_img).show()  # Displays color image using peak values for masks
 
 # Segmentation with Gaussian Mixture Model
-# TODO create initializing points for the GMM - must have shape (3, 2)
+# Generate numpy array to initialize GMM with, use random pixel numbers and theorized peak values
+points_init = np.array([[1, 2, 3], peak_values]).transpose()
 
-# gmm_data = np.vstack([pixels[:-1], counts]).transpose()  # Combine histogram data in 2D array
 gmm_data = np.column_stack(enumerate(mf_img[binary_mask])).transpose()  # Enumerate pixels with their grayscale values
-gmm = mixture.GaussianMixture(n_components=3, means_init=peak_values)
+gmm = mixture.GaussianMixture(n_components=3, means_init=points_init)  # 3 clusters
 gmm.fit(gmm_data)  # Estimate model parameters with the EM algorithm
-group_colors = ['r', 'g', 'b']
 
-# "Responsibility = conditional probability of point i belonging to cluster k
-print(gmm.means_)
+# "Responsibility" = conditional probability of point i belonging to cluster k
+responsibilities = gmm.predict_proba(gmm_data)
+cluster_predict = gmm.predict(gmm_data)
 
 
+# Map responsibilities/cluster predictions to image
+prime_colors = [[255, 0, 0], [0, 255, 0], [0, 0, 255]]  # Define primary colors [R, G, B]
+gmm_img = bin_masked_img.copy()
+gmm_img = color.gray2rgb(gmm_img)
 
+csf_mask = cluster_predict == 0
+gray_mask = cluster_predict == 1
+white_mask = cluster_predict == 2
+
+# TODO figure out how to revert a linear array back into an image array
+
+# for counter in range(len(gmm_img[binary_mask])):
+#     if cluster_predict[counter] == 0:
+#         gmm_img[binary_mask][counter] = [255, 0, 0]  # Red
+#     elif cluster_predict[counter] == 1:
+#         gmm_img[binary_mask][counter] = [0, 255, 0]  # Green
+#     elif cluster_predict[counter] == 2:
+#         gmm_img[binary_mask][counter] = [0, 0, 255]  # Blue
+
+
+# misc.toimage(gmm_img).show()  # Displays GMM colored image
+
+# gmm.means_[:,1]
