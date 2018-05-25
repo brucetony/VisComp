@@ -4,7 +4,7 @@ from sklearn import mixture
 from scipy import misc, ndimage
 import matplotlib.pyplot as plt
 
-# np.set_printoptions(threshold=np.nan)  # For showing whole numpy array
+np.set_printoptions(threshold=np.nan)  # For showing whole numpy array
 
 # Read image into array data
 raw_img_read = misc.imread("brain-noisy.png", True)
@@ -69,21 +69,37 @@ prime_colors = [[255, 0, 0], [0, 255, 0], [0, 0, 255]]  # Define primary colors 
 gmm_img = bin_masked_img.copy()
 gmm_img = color.gray2rgb(gmm_img)
 
-csf_mask = cluster_predict == 0
-gray_mask = cluster_predict == 1
-white_mask = cluster_predict == 2
 
-# TODO figure out how to revert a linear array back into an image array
+def pixel_cluster_matcher(mask_template, cluster_assignment_list, cluster_number):
+    '''
+    Uses a mask template to determine pixel location and iterates over new mask, changing Boolean\
+    values to false if they don't match cluster_number
+    :param mask_template: Mask_template to use to determine pixels of interest to change bool values
+    :param cluster_assignment_list: 1D array with cluster assignment for every pixel that is True in mask_template
+    :param cluster_number: Which cluster you are building this mask for
+    :return: Mask with True values for only pixels at specified cluster_number location
+    '''
+    new_mask = mask_template.copy()
+    k = 0
+    for pixel in np.nditer(new_mask, op_flags=['readwrite']):
+        if pixel[...]:
+            if cluster_assignment_list[k] != cluster_number:
+                pixel[...] = False
+            k += 1
+    return new_mask
 
-# for counter in range(len(gmm_img[binary_mask])):
-#     if cluster_predict[counter] == 0:
-#         gmm_img[binary_mask][counter] = [255, 0, 0]  # Red
-#     elif cluster_predict[counter] == 1:
-#         gmm_img[binary_mask][counter] = [0, 255, 0]  # Green
-#     elif cluster_predict[counter] == 2:
-#         gmm_img[binary_mask][counter] = [0, 0, 255]  # Blue
+
+# Create masks for CSF, gray/white matter then assign them color layers
+csf_mask = pixel_cluster_matcher(binary_mask, cluster_predict, 0)
+gray_mask = pixel_cluster_matcher(binary_mask, cluster_predict, 1)
+white_mask = pixel_cluster_matcher(binary_mask, cluster_predict, 2)
+
+gmm_img[csf_mask] = [0, 255, 0]
+gmm_img[gray_mask] = [255, 0, 0]
+gmm_img[white_mask] = [0, 0, 255]
+
+# TODO also map probabilities? Use as a scalar?
+
+# misc.imsave('GMM_image.png', gmm_img)  # Save output image for GMM computation
 
 
-# misc.toimage(gmm_img).show()  # Displays GMM colored image
-
-# gmm.means_[:,1]
