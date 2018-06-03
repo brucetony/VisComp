@@ -53,23 +53,42 @@ for counter, mask in enumerate(masks):
 
 # misc.toimage(peak_img).show()  # Displays color image using peak values for masks
 
-# Segmentation with Gaussian Mixture Model
-# Generate numpy array to initialize GMM with, use random pixel numbers and theorized peak values
+########################################################################################################################
+# sklearn GMM used here for learning
+########################################################################################################################
+
+# # Segmentation with Gaussian Mixture Model
+# # Generate numpy array to initialize GMM with, use random pixel numbers and theorized peak values
+# points_init = np.array([[1, 2, 3], peak_values]).transpose()
+#
+# gmm_data = np.column_stack(enumerate(mf_img[binary_mask])).transpose()  # Enumerate pixels with their grayscale values
+# gmm = mixture.GaussianMixture(n_components=3, means_init=points_init)  # 3 clusters
+# gmm.fit(gmm_data)  # Estimate model parameters with the EM algorithm
+#
+# # "Responsibility" = conditional probability of point i belonging to cluster k
+# responsibilities = gmm.predict_proba(gmm_data)
+# cluster_predict = gmm.predict(gmm_data)
+#
+# # Map responsibilities/cluster predictions to image
+# prime_colors = [[255, 0, 0], [0, 255, 0], [0, 0, 255]]  # Define primary colors [R, G, B]
+# gmm_img = bin_masked_img.copy()
+# gmm_img = color.gray2rgb(gmm_img)
+
+########################################################################################################################
+
+# Create 2D array with pixel number (x value) and pixel intensity (y value)
+gmm_data = np.column_stack(enumerate(mf_img[binary_mask])).transpose()
 points_init = np.array([[1, 2, 3], peak_values]).transpose()
 
-gmm_data = np.column_stack(enumerate(mf_img[binary_mask])).transpose()  # Enumerate pixels with their grayscale values
-gmm = mixture.GaussianMixture(n_components=3, means_init=points_init)  # 3 clusters
-gmm.fit(gmm_data)  # Estimate model parameters with the EM algorithm
+########################################################################################################################
+# Homemade GMM with no optimization
+########################################################################################################################
 
-# "Responsibility" = conditional probability of point i belonging to cluster k
-responsibilities = gmm.predict_proba(gmm_data)
-cluster_predict = gmm.predict(gmm_data)
-
-
-# Map responsibilities/cluster predictions to image
-prime_colors = [[255, 0, 0], [0, 255, 0], [0, 0, 255]]  # Define primary colors [R, G, B]
-gmm_img = bin_masked_img.copy()
-gmm_img = color.gray2rgb(gmm_img)
+# Use homemade GMM functions to predict pixel clustering using only 1 iteration and no optimization
+mix_coeff, sigma, means, responsibilities = GMM_convergence(gmm_data, 3,
+                                                            iterations=iter, means_init=points_init, only_init=True)
+cluster_predictions = [np.argmax(sample) for sample in responsibilities]
+cluster_probabilities = [np.amax(sample) for sample in responsibilities]
 
 
 def pixel_cluster_matcher(mask_template, cluster_assignment_list, cluster_number):
@@ -91,18 +110,50 @@ def pixel_cluster_matcher(mask_template, cluster_assignment_list, cluster_number
     return new_mask
 
 
-# Create masks for CSF, gray/white matter then assign them color layers
-csf_mask = pixel_cluster_matcher(binary_mask, cluster_predict, 0)
-gray_mask = pixel_cluster_matcher(binary_mask, cluster_predict, 1)
-white_mask = pixel_cluster_matcher(binary_mask, cluster_predict, 2)
+# Copy the binary mask image and convert to RGB
+gmm_img = bin_masked_img.copy()
+gmm_img = color.gray2rgb(gmm_img)
 
-gmm_img[csf_mask] = [0, 255, 0]
-gmm_img[gray_mask] = [255, 0, 0]
+# Create masks for CSF, gray/white matter then assign them color layers
+csf_mask = pixel_cluster_matcher(binary_mask, cluster_predictions, 0)
+gray_mask = pixel_cluster_matcher(binary_mask, cluster_predictions, 1)
+white_mask = pixel_cluster_matcher(binary_mask, cluster_predictions, 2)
+
+gmm_img[csf_mask] = [255, 0, 0]
+gmm_img[gray_mask] = [0, 255, 0]
 gmm_img[white_mask] = [0, 0, 255]
 
-# Using my homemade GMM algorithm
+# Multiply each value by the probability of that pixel belonging to that class (darker == less probable)
+gmm_img[binary_mask] = [[value*cluster_probabilities[i] for value in pixel] for i, pixel in enumerate(gmm_img[binary_mask])]
+
+# Display resulting image
+# misc.toimage(gmm_img).show()  # Displays color image using peak values for masks
+
+########################################################################################################################
+# Homemade GMM with optimization until convergence
+########################################################################################################################
+
+# Using my homemade GMM algorithm until convergence
 iter = 30
 mix_coeff, sigma, means, responsibilities = GMM_convergence(gmm_data, 3, iterations=iter, means_init=points_init)
+
+cluster_predictions = [np.argmax(sample) for sample in responsibilities]
+cluster_probabilities = [np.amax(sample) for sample in responsibilities]
+
+# Create masks for CSF, gray/white matter then assign them color layers
+csf_mask = pixel_cluster_matcher(binary_mask, cluster_predictions, 0)
+gray_mask = pixel_cluster_matcher(binary_mask, cluster_predictions, 1)
+white_mask = pixel_cluster_matcher(binary_mask, cluster_predictions, 2)
+
+gmm_img[csf_mask] = [255, 0, 0]
+gmm_img[gray_mask] = [0, 255, 0]
+gmm_img[white_mask] = [0, 0, 255]
+
+# Multiply each value by the probability of that pixel belonging to that class (darker == less probable)
+gmm_img[binary_mask] = [[value*cluster_probabilities[i] for value in pixel] for i, pixel in enumerate(gmm_img[binary_mask])]
+
+# Display resulting image
+misc.toimage(gmm_img).show()  # Displays color image using peak values for masks
 
 # Create helper function to arrange values for plotting
 def track_changes(value_array):
@@ -115,16 +166,16 @@ def track_changes(value_array):
     return list(map(list, zip(*differences)))
 
 # Graph the changes in model parameters with each iteration
-for i in range(len(track_changes(mix_coeff))):
-    plt.plot(range(iter), track_changes(mix_coeff)[i], color='red', label='Mixing Coefficients')
-    plt.plot(range(iter), track_changes(sigma)[i], color='blue', label='Variance')
-    plt.plot(range(iter), track_changes(means)[i], color='darkgreen', label='Means')
-    if i == 0:
-        plt.legend(['Mixing Coefficients', 'Variance', 'Means'])
-plt.axhline(y=0, color='black', linestyle='-')
-plt.xlabel('EM Iteration')
-plt.ylabel('Cluster parameter difference from previous iteration')
-plt.title('Model Parameter Changes per Iteration (for each cluster)')
+# for i in range(len(track_changes(mix_coeff))):
+#     plt.plot(range(iter), track_changes(mix_coeff)[i], color='red', label='Mixing Coefficients')
+#     plt.plot(range(iter), track_changes(sigma)[i], color='blue', label='Variance')
+#     plt.plot(range(iter), track_changes(means)[i], color='darkgreen', label='Means')
+#     if i == 0:
+#         plt.legend(['Mixing Coefficients', 'Variance', 'Means'])
+# plt.axhline(y=0, color='black', linestyle='-')
+# plt.xlabel('EM Iteration')
+# plt.ylabel('Cluster parameter difference from previous iteration')
+# plt.title('Model Parameter Changes per Iteration (for each cluster)')
 # plt.show()
 
 # TODO also map probabilities? Use as a scalar?
