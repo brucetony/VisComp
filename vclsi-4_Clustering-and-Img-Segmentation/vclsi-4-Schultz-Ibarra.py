@@ -3,6 +3,7 @@ from skimage import color
 from sklearn import mixture
 from scipy import misc, ndimage
 import matplotlib.pyplot as plt
+from gaussian_mixture_model import *
 
 np.set_printoptions(threshold=np.nan)  # For showing whole numpy array
 
@@ -27,6 +28,7 @@ plt.xlabel("Pixel Value (log)")
 plt.ylabel("Frequency")
 plt.title("Brain image by pixel value")
 # plt.show()  # Peaks refer to segmentation thresholds, gray/white matter and background
+plt.close()
 
 # Determine histogram peaks and the corresponding pixel value
 peak_values = []
@@ -71,14 +73,14 @@ gmm_img = color.gray2rgb(gmm_img)
 
 
 def pixel_cluster_matcher(mask_template, cluster_assignment_list, cluster_number):
-    '''
+    """
     Uses a mask template to determine pixel location and iterates over new mask, changing Boolean\
     values to false if they don't match cluster_number
     :param mask_template: Mask_template to use to determine pixels of interest to change bool values
     :param cluster_assignment_list: 1D array with cluster assignment for every pixel that is True in mask_template
     :param cluster_number: Which cluster you are building this mask for
     :return: Mask with True values for only pixels at specified cluster_number location
-    '''
+    """
     new_mask = mask_template.copy()
     k = 0
     for pixel in np.nditer(new_mask, op_flags=['readwrite']):
@@ -98,7 +100,35 @@ gmm_img[csf_mask] = [0, 255, 0]
 gmm_img[gray_mask] = [255, 0, 0]
 gmm_img[white_mask] = [0, 0, 255]
 
+# Using my homemade GMM algorithm
+iter = 30
+mix_coeff, sigma, means, responsibilities = GMM_convergence(gmm_data, 3, iterations=iter, means_init=points_init)
+
+# Create helper function to arrange values for plotting
+def track_changes(value_array):
+    # Standardize each iteration element
+    differences = []
+    for i, iteration in enumerate(value_array):
+        value_array[i] = [value/sum(iteration) for value in iteration]
+        if i > 0:
+            differences.append([value_array[i][k]-value_array[i-1][k] for k in range(len(iteration))])
+    return list(map(list, zip(*differences)))
+
+# Graph the changes in model parameters with each iteration
+for i in range(len(track_changes(mix_coeff))):
+    plt.plot(range(iter), track_changes(mix_coeff)[i], color='red', label='Mixing Coefficients')
+    plt.plot(range(iter), track_changes(sigma)[i], color='blue', label='Variance')
+    plt.plot(range(iter), track_changes(means)[i], color='darkgreen', label='Means')
+    if i == 0:
+        plt.legend(['Mixing Coefficients', 'Variance', 'Means'])
+plt.axhline(y=0, color='black', linestyle='-')
+plt.xlabel('EM Iteration')
+plt.ylabel('Cluster parameter difference from previous iteration')
+plt.title('Model Parameter Changes per Iteration (for each cluster)')
+# plt.show()
+
 # TODO also map probabilities? Use as a scalar?
+
 
 # misc.imsave('GMM_image.png', gmm_img)  # Save output image for GMM computation
 
