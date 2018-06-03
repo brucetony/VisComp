@@ -3,16 +3,20 @@ from math import pi, exp, sqrt
 import numpy as np
 
 def GMM_init(data_points, n_distributions, means_init=None):
-    sigma = [1] * n_distributions  # Initialize sigma to 1 for each cluster
+
     mix_coeff = [1/n_distributions] * n_distributions  # Sum of pi across all clusters must = 1
-    if means_init:
-        means = means_init  # Set initial means to user specified values
+    if means_init is not None:
+        means = means_init[:,1]  # Set initial means to user specified values
     else:
         # Random initialization using y values ([:,1])
         means = [randint(min(data_points[:,1]), max(data_points[:,1])) for i in range(n_distributions)]
 
+    # Initialize variance to sig**2 = sum(X-mu)**2 / N
+    init_variance = sum([(data_points[i,1]-min(means))**2 for i in range(len(data_points[:,1]))])
+    sigma = [sqrt(init_variance/len(data_points[:,1]))] * n_distributions
     return mix_coeff, sigma, means
 
+# TODO implement k-means init
 # TODO implement membership vector z
 
 # E-step of GMM algorithm
@@ -63,16 +67,25 @@ def GMM_optimize(data_points, n_distributions, mix_coeff, sigma, means):
         sig_numerator = sum([(rho[i][k]*((data_points[i][1]-means[k])**2)) for i in range(len(data_points[:, 1]))])
         opt_sigma[k] = sqrt(sig_numerator/cluster_resp_sum)
 
-    return opt_mix_coeff, opt_sigma, opt_means
+    return opt_mix_coeff, opt_sigma, opt_means, rho
 
 
-def GMM_convergence(data_points, n_distributions, iterations=100, means_init=None):
+def GMM_convergence(data_points, n_distributions, iterations=50, means_init=None):
     mix_coeff, sigma, means = GMM_init(data_points, n_distributions, means_init)
+
+    # Create list to track changes with every iteration
+    mix_coefficient_list = [list(mix_coeff)]
+    sigma_list = [list(sigma)]
+    means_list = [list(means)]
+
     i = 0
     while i < iterations:
-        mix_coeff, sigma, means = GMM_optimize(data_points, n_distributions, mix_coeff, sigma, means)
+        mix_coeff, sigma, means, rho = GMM_optimize(data_points, n_distributions, mix_coeff, sigma, means)
+        mix_coefficient_list.append(mix_coeff)
+        sigma_list.append(sigma)
+        means_list.append(means)
         i += 1
-    return mix_coeff, sigma, means
+    return mix_coefficient_list, sigma_list, means_list, rho
 
 # TODO Make this iterate and fix functions to work together better -- use OOP?
 
