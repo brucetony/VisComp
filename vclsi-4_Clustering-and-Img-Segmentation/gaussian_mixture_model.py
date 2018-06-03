@@ -2,22 +2,28 @@ from random import randint
 from math import pi, exp, sqrt
 import numpy as np
 
-def GMM_init(data_points, n_distributions, means_init=None):
 
+def GMM_init(data_points, n_distributions, means_init=None):
+    """
+    Initializes N gaussian distributions for use in GMM modeling
+    :param data_points: 2D array containing data of interesting for GMM
+    :param n_distributions: Number of clusters predicted to be found
+    :param means_init: Optional, means to start the clustering process
+    :return: Separate 1D arrays for mixing coefficients, variance values, and means
+    """
     mix_coeff = [1/n_distributions] * n_distributions  # Sum of pi across all clusters must = 1
     if means_init is not None:
-        means = means_init[:,1]  # Set initial means to user specified values
+        means = means_init[:, 1]  # Set initial means to user specified values
     else:
         # Random initialization using y values ([:,1])
-        means = [randint(min(data_points[:,1]), max(data_points[:,1])) for i in range(n_distributions)]
+        means = [randint(min(data_points[:, 1]), max(data_points[:, 1])) for i in range(n_distributions)]
 
     # Initialize variance to sig**2 = sum(X-mu)**2 / N
-    init_variance = sum([(data_points[i,1]-min(means))**2 for i in range(len(data_points[:,1]))])
-    sigma = [sqrt(init_variance/len(data_points[:,1]))] * n_distributions
+    init_variance = sum([(data_points[i, 1]-min(means))**2 for i in range(len(data_points[:, 1]))])
+    sigma = [sqrt(init_variance/len(data_points[:, 1]))] * n_distributions
     return mix_coeff, sigma, means
 
 # TODO implement k-means init
-# TODO implement membership vector z
 
 # E-step of GMM algorithm
 def GMM_responsibilities(data_points, n_distributions, mix_coeff, sigma, means):
@@ -70,8 +76,12 @@ def GMM_optimize(data_points, n_distributions, mix_coeff, sigma, means):
     return opt_mix_coeff, opt_sigma, opt_means, rho
 
 
-def GMM_convergence(data_points, n_distributions, iterations=50, means_init=None):
+def GMM_convergence(data_points, n_distributions, iterations=25, means_init=None, only_init=False):
     mix_coeff, sigma, means = GMM_init(data_points, n_distributions, means_init)
+
+    if only_init:
+        rho = GMM_responsibilities(data_points, n_distributions, mix_coeff, sigma, means)
+        return mix_coeff, sigma, means, rho
 
     # Create list to track changes with every iteration
     mix_coefficient_list = [list(mix_coeff)]
@@ -87,9 +97,6 @@ def GMM_convergence(data_points, n_distributions, iterations=50, means_init=None
         i += 1
     return mix_coefficient_list, sigma_list, means_list, rho
 
-# TODO Make this iterate and fix functions to work together better -- use OOP?
 
-# foo = np.array([[1, 2], [1, 3], [3, 6], [7, 7]])
-# bar, dad, balls = GMM_convergence(foo, 2, iterations=5)
-# print(balls)
+# TODO Make this iterate and fix functions to work together better -- use OOP?
 
