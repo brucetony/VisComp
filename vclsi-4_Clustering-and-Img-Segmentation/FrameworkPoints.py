@@ -1,10 +1,6 @@
 import numpy as np
-import scipy
-from scipy import misc
 import matplotlib
-import  matplotlib.pyplot as plt
-from matplotlib import cm
-
+import matplotlib.pyplot as plt
 
 def get_point_edges(p, sigma_distance, edge_radius):
     """
